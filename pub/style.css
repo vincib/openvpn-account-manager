@@ -1,0 +1,39 @@
+div.main {
+    padding: 16px;
+}
+
+div.row {
+    padding: 8px 0;
+}
+table.tbl {
+    padding: 0px 0;
+    margin: 16px 0;
+}
+table.tbl td, table.tbl th {
+    padding: 8px;
+    border-collapse: collapse;
+    border: 1px solid #99d;
+    margin: 0;
+}
+
+table.tbl td label {
+    margin-bottom: 0;
+}
+
+.alert {
+    position: absolute;
+    left: 0;
+    padding: 10px 100px;
+    top: 0px;
+    width: 100%;
+}
+
+.strlist {
+    max-height: 100px;
+    overflow: auto;
+    border: 1px solid #ccc;
+    padding: 10px;
+}
+.red {
+    color: #F00;
+}
