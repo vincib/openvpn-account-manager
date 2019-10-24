@@ -1,3 +1,4 @@
 vendor/
 db.openvpn.sqlite
 config.php
+composer.lock
