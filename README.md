@@ -9,7 +9,7 @@ Copyright: 2018-2019 Benjamin Sonntag for Octopuce
 Installation
 ------------
 
-* install a php7.0+ with sqlite3 (on debian use `apt install php7.0-cli php7.0-fpm php7.0-sqlite3` )
+* install a php7.2+ with sqlite3 (on debian use `apt install php7.2-cli php7.2-fpm php7.2-sqlite3` )
 * point an HTTPS vhost of your webserver into pub/ folder (using apache & mod-php or nginx & fpm)
 * fill config.php if needed (use config.sample.php as a template)
 * launch `composer update` to download the dependencies
