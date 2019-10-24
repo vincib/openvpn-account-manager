@@ -1,3 +1,4 @@
+#!/usr/bin/php
 <?php
 
 // check for a username / password (and 2FA) for openvpn
