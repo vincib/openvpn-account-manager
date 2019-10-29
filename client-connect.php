@@ -22,6 +22,9 @@ if (!($me=$stmt->fetch())) {
     echo "Login not found\n";
     exit(1);
 }
+
+if ($me["ip"]=="") exit(0);
+
 file_put_contents($argv[1],"ifconfig-push ".$me["ip"]." ".long2ip(ip2long($me["ip"])+1)."\n");
 
 exit(0);
