@@ -13,6 +13,17 @@ try {
     echo "SQLite already initialized, skipping...\n";
 }
 
+// upgrade for group management
+try {
+    $db->exec("CREATE TABLE groups (name TEXT PRIMARY KEY, cidr TEXT);");
+    $db->exec("ALTER TABLE users ADD ip TEXT;");
+    $db->exec("ALTER TABLE users ADD group TEXT;");
+    $db->exec("CREATE INDEX usersgroupname ON users (groupname);"); 
+} catch (PDOException $e) {
+    echo "Group management already initialized, skipping...\n";
+}
+
+
 $db->query("REPLACE INTO users (username,password,isadmin,totp,usetotp,created,updated,used) VALUES ('admin','".password_hash($password,PASSWORD_DEFAULT)."', 1,'',0,datetime('now'),datetime('now'),null);");
 echo "password for admin account is now ".$password."\n";
 

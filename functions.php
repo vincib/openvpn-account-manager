@@ -1,5 +1,89 @@
 <?php
 
+function cidr_range( $cidr, $chkip=null )
+{
+    // Assign IP / mask
+    list($ip,$mask) = explode("/",$cidr);
+    // Sanitize IP
+    $ip1 = preg_replace( '_(\d+\.\d+\.\d+\.\d+).*$_', '$1', "$ip.0.0.0" );
+    // Calculate range
+    $ip2 = long2ip( ip2long( $ip1 ) - 1 + ( 1 << ( 32 - $mask) ) );
+    // are we cidr range cheking?
+    if ( $chkip != null && ! filter_var( $chkip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false )
+        {
+            return ip2long( $ip1 ) <= ip2long( $chkip ) && ip2long( $ip2 ) >= ip2long( $chkip ) ? true : false;
+        } else {
+        return array(ip2long($ip1),ip2long($ip2));
+    }
+}
+/*    
+var_dump( cidr_range( "127.0/16", "127.0.0.1" ) );   // bool(true)
+var_dump( cidr_range( "127.0/16", "192.168.0.1" ) ); // bool(false)
+var_dump( cidr_range( "192.168.0.0/24" ) );          // string(27) "192.168.0.0 - 192.168.0.255"
+ */
+
+/** 
+ * Allocate IP addresses (divided in /30) to all users.
+ * first check that any user that has an IP is in the right CIDR GROUP     
+ * then allocate IP address to missing users, including the username specified, or all of them if not specified
+ */ 
+function allocate_ip($username="") {
+    global $db;
+    // clean users in no group
+    $db->exec("UPDATE users SET ip='' WHERE groupname='';");
+    $stmt = $db->prepare("SELECT * FROM users WHERE username=?;");
+    $stmt->execute(array($username));
+    $edit=$stmt->fetch();
+    if ($edit["groupname"]=="") return true; // no group
+    // get this group's start / end ip pool :
+    $stmt = $db->prepare("SELECT * FROM groups WHERE name=?;");
+    $stmt->execute(array($edit["groupname"]));
+    $group=$stmt->fetch();
+    list($start,$end)=cidr_range($group["cidr"]);
+    echo "Group: ".$group["cidr"]." ".$start." ".$end;
+    // Check if the IP is set and in the pool :
+    if ($edit["ip"]) {
+        $ip = ip2long($edit["ip"]);
+        if ($ip>=$start && $ip<=$end) {
+            // already good, skipping
+            echo "already good";
+            return true;
+        }
+        echo "group change";
+        // ip is set BUT BAD : reset it to null, will check for another one (eg: group change)
+        $stmt=$db->prepare("UPDATE users SET ip='' WHERE username=?;");
+        $stmt->execute(array($username));
+    }
+    // IP is empty or incorrect, user need to get one.
+    // let's enumerate the other users in that group, and find a free IP    
+    $stmt = $db->prepare("SELECT ip FROM users WHERE groupname=? AND ip!='';");
+    $stmt->execute(array($edit["groupname"]));
+    $start=$start/4; $end=$end/4;
+    $pool=array();
+    while($other=$stmt->fetch()) {
+        echo "O:".$other["ip"]." ";
+        // we get a pool from start/4 to end/4 (/30 mode)
+        $ipother=ip2long($other["ip"])/4;
+        $pool[$ipother]=1;
+    }
+    print_r($pool);
+    $found=false;
+    for($i=$start;$i<=$end;$i++) {
+        if (!isset($pool[$i]) && ( ($i & 63)!=0 )) { // skip also IPs ending by .0 (for windows, just in case...)
+            $found=true;
+            $newip=long2ip($i*4);
+            break;
+        }
+    }
+    if ($found) {
+        $stmt=$db->prepare("UPDATE users SET ip=? WHERE username=?;");
+        $stmt->execute(array($newip,$username));
+        return true;
+    }
+    return false;
+}
+
+
 function he($str) {
     return htmlentities($str);
 }

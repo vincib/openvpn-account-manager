@@ -69,16 +69,18 @@ if (isset($_POST["username"])) {
             if (isset($_POST["password"]) && $_POST["password"]) {
                 $sql.=", password='".addslashes(password_hash($_POST["password"],PASSWORD_DEFAULT))."'";
             }
-            $db->exec("UPDATE users SET updated=datetime('now'), username='".addslashes($_POST["username"])."', isadmin=".intval($_POST["isadmin"])." $sql WHERE username='".addslashes($_POST["id"])."';");
+            $db->exec("UPDATE users SET updated=datetime('now'), username='".addslashes($_POST["username"])."', groupname='".addslashes($_POST["groupname"])."', isadmin=".intval($_POST["isadmin"])." $sql WHERE username='".addslashes($_POST["id"])."';");
             $info="User account changed successfully";
         } else {
             // ADD 
-            $db->exec("INSERT INTO users (username,password,created,updated,isadmin,usetotp) VALUES ('".addslashes($_POST["username"])."','".addslashes(password_hash($_POST["password"],PASSWORD_DEFAULT))."',datetime('now'),datetime('now'),".intval($_POST["isadmin"]).",0);");
+            $db->exec("INSERT INTO users (username,groupname,password,created,updated,isadmin,usetotp) VALUES ('".addslashes($_POST["username"])."','".addslashes($_POST["groupname"])."','".addslashes(password_hash($_POST["password"],PASSWORD_DEFAULT))."',datetime('now'),datetime('now'),".intval($_POST["isadmin"]).",0);");
             if ($sql) {
                 $db->exec("UPDATE users SET username='".addslashes($_POST["username"])."' $sql WHERE username='".addslashes($_POST["username"])."';");
             }
             $info="User account created successfully";
         }
+        // now calculate user's IP address
+        allocate_ip($_POST["username"]);
         require_once("index.php");
         exit();
     }
@@ -106,7 +108,24 @@ require_once("message.php");
                    <input type="password" class="form-control" id="password" name="password" value="" autocomplete="new-password" />
                    </div>
                    </div>
-                                                                   
+
+ <div class="row">
+<div class="col-6">
+                                                             <label for="groupname">Group (non mandatory)</label>
+                                                             <select id="groupname" name="groupname" class="form-control" ><option value="">-- choose a group --</option>
+                                                             <?php
+$stmt = $db->prepare("SELECT name FROM groups ORDER BY name;");
+$stmt->execute();
+while ($res=$stmt->fetch()) {
+    echo "<option";
+    if ($edit["groupname"]==$res["name"]) echo " selected=\"selected\"";
+    echo ">".$res["name"]."</option>\n";
+}
+                                                             ?>
+</select>
+</div>
+                   </div>
+
         <div class="row">
         <div class="col-6">
         <input type="checkbox" value="1" id="isadmin" name="isadmin" <?php if ($edit["isadmin"]) echo "checked=\"checked\""; ?>>

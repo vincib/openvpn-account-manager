@@ -28,10 +28,11 @@ require_once("message.php");
 
 ?>
 <div class="row">
-    <div class="col-8">
+    <div class="col-6">
     <p>List of your VPN accounts (administrators are in red)</p>
-    </div><div class="col-4">
+    </div><div class="col-6">
 <a href="edit.php" class="btn btn-primary">Create a new account</a>
+<a href="groups.php" class="btn btn-secondary">Show groups</a>
 <a href="login.php" class="btn btn-secondary">Logout</a>
     </div>
     </div>
@@ -58,7 +59,7 @@ pager($offset,$count,$total,"index.php?offset=%%offset%%&count=".$count.$ss,"<di
     <div class="row">
     <div class="col-12">
   <table class="tbl">
-    <tr><th></th><th>Username</th><th>Created</th><th>Updated</th><th>Used</th><th>2FA?</th></tr>
+    <tr><th></th><th>Username</th><th>Group</th><th>Created</th><th>Updated</th><th>Used</th><th>2FA?</th><th>IP</th></tr>
 <?php
 $stmt = $db->prepare("SELECT * FROM users WHERE 1 $sql ORDER BY username LIMIT $offset,$count;");
 $stmt->execute();
@@ -71,10 +72,12 @@ while ($line=$stmt->fetch()) {
     echo "<td";
     if ($line["isadmin"]) echo " class=\"red\"";
     echo ">".he($line["username"])."</td>";
+    echo "<td>".$line["groupname"]."</td>";
     echo "<td>".date_my2fr($line["created"])."</td>";
     echo "<td>".date_my2fr($line["updated"])."</td>";
     echo "<td>".date_my2fr($line["used"])."</td>";
     echo "<td>".(($line["usetotp"])?"Yes":"No")."</td>";
+    echo "<td>".$line["ip"]."</td>";
     echo "</tr>";
 }
 ?>
