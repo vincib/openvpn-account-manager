@@ -17,7 +17,7 @@ try {
 try {
     $db->exec("CREATE TABLE groups (name TEXT PRIMARY KEY, cidr TEXT);");
     $db->exec("ALTER TABLE users ADD ip TEXT;");
-    $db->exec("ALTER TABLE users ADD group TEXT;");
+    $db->exec("ALTER TABLE users ADD groupname TEXT;");
     $db->exec("CREATE INDEX usersgroupname ON users (groupname);"); 
 } catch (PDOException $e) {
     echo "Group management already initialized, skipping...\n";
