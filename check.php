@@ -4,6 +4,7 @@
 // check for a username / password (and 2FA) for openvpn
 
 define("SKIP_IDENTITY_CONTROL",1);
+$suffix=".copy"; // use the COPY of the sqlite DB
 require_once("head.php");
 
 use OTPHP\TOTP;
@@ -38,7 +39,8 @@ if (!password_verify($password,$me["password"])) {
     echo "Password incorrect\n";
     exit(1);
 }
-$db->exec("UPDATE users SET used=datetime('now') WHERE username='".addslashes($username)."';");
+@file_put_contents($updatespool."/".microtime(true),$username."|".date("Y-m-d H:i:s"));
+//$db->exec("UPDATE users SET used=datetime('now') WHERE username='".addslashes($username)."';");
 echo "OK\n";
 exit(0);
 

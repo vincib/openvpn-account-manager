@@ -4,9 +4,11 @@ require_once("config.php");
 require_once("functions.php");
 require_once("vendor/autoload.php");
 
+if (!isset($suffix)) $suffix="";
+
 // check we are identified :
 try {
-    $db = new PDO('sqlite:'.$sqlitedb);
+    $db = new PDO('sqlite:'.$sqlitedb.$suffix);
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
     die ('DB file error, please check application '.print_r($e,true));

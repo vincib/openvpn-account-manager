@@ -12,6 +12,7 @@ if (isset($_GET["username"])) {
         $stmt=$db->prepare("DELETE FROM users WHERE username=?");
         $stmt->execute(array($_GET["username"]));
         $info="User deleted successfully";
+        touch($touchfile);
     }
 }
 

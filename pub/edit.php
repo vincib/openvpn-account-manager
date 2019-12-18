@@ -81,6 +81,7 @@ if (isset($_POST["username"])) {
         }
         // now calculate user's IP address
         allocate_ip($_POST["username"]);
+        touch($touchfile);
         require_once("index.php");
         exit();
     }
