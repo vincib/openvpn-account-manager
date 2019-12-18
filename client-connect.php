@@ -5,6 +5,7 @@
 // depending on its group.
 
 define("SKIP_IDENTITY_CONTROL",1);
+$suffix=".copy"; // use the COPY of the sqlite DB
 require_once("head.php");
 
 // The command is passed the common name and IP address of the  just-authenticated  client as  environmental variables
