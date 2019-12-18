@@ -40,13 +40,11 @@ function allocate_ip($username="") {
     $stmt->execute(array($edit["groupname"]));
     $group=$stmt->fetch();
     list($start,$end)=cidr_range($group["cidr"]);
-    echo "Group: ".$group["cidr"]." ".$start." ".$end;
     // Check if the IP is set and in the pool :
     if ($edit["ip"]) {
         $ip = ip2long($edit["ip"]);
         if ($ip>=$start && $ip<=$end) {
             // already good, skipping
-            echo "already good";
             return true;
         }
         echo "group change";
