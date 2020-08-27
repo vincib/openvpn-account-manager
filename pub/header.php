@@ -2,7 +2,7 @@
 <head>
 <title>OpenVPN user manager</title>
      <link rel="stylesheet" type="text/css" href="bootstrap/css/bootstrap.min.css" />
-     <link rel="stylesheet" type="text/css" href="font-awesome/css/fontawesome-all.min.css" />
+     <link rel="stylesheet" type="text/css" href="font-awesome/css/all.min.css" />
      <link rel="stylesheet" type="text/css" href="style.css" />
 
     <script type="text/javascript" src="jquery.min.js"></script>
