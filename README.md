@@ -19,3 +19,38 @@ Installation
 * launch cron-update.php regularly (every 5 minutes minimum recommended) to update the configuration file for OpenVPN (useful for big installations)
 
 
+easy-rsa setup
+--------------
+
+```
+apt install easy-rsa
+make-cadir /etc/openvpn/pki
+cd /etc/openvpn/pki
+```
+
+edit vars :
+
+set_var EASYRSA_KEY_SIZE       3072
+set_var EASYRSA_CA_EXPIRE      7200
+set_var EASYRSA_CERT_EXPIRE    3650
+
+initialize the CA:
+
+./easyrsa init-pki
+./easyrsa build-ca (type a password for your CA, 2 times)
+./easyrsa gen-dh
+./easyrsa build-client-full client
+(type a new client password 2 times then the CA password)
+openssl rsa -in pki/private/client.key -out pki/private/client.unprotected.key
+(retype previous client password)
+./easyrsa build-server-full server
+(type a new server password 2 times then the CA password)
+openssl rsa -in pki/private/server.key -out pki/private/server.unprotected.key
+(retype previous server password)
+openvpn --genkey --secret /etc/openvpn/pki/ta.key 
+
+Now you can fill your openvpn client.ovpn and server.conf configuration files as stated inside them. search for --- or {}
+
+
+
+
