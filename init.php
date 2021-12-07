@@ -15,8 +15,9 @@ try {
 
 // upgrade for group management
 try {
-    $db->exec("CREATE TABLE groups (name TEXT PRIMARY KEY, cidr TEXT);");
+    $db->exec("CREATE TABLE groups (name TEXT PRIMARY KEY, cidr TEXT, cidr6 TEXT);");
     $db->exec("ALTER TABLE users ADD ip TEXT;");
+    $db->exec("ALTER TABLE users ADD ipv6 TEXT;");
     $db->exec("ALTER TABLE users ADD groupname TEXT;");
     $db->exec("CREATE INDEX usersgroupname ON users (groupname);"); 
 } catch (PDOException $e) {
