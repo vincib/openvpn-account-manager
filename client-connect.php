@@ -27,7 +27,8 @@ if (!($me=$stmt->fetch())) {
 if ($me["ip"]=="") exit(0);
 $ipv6="";
 if (trim($me["ipv6"])) {
-    $ipv6="\nifconfig-push-ipv6 ".$me["ipv6"];
+    $next=substr($me["ipv6"],0,strrpos($me["ipv6"],":")+1).(intval(substr($me["ipv6"],strrpos($me["ipv6"],":")+1))+1);
+    $ipv6="\nifconfig-ipv6-push ".$me["ipv6"]."/64 ".$next;
 }
 file_put_contents($argv[1],"ifconfig-push ".$me["ip"]." ".long2ip(ip2long($me["ip"])+1).$ipv6."\n");
 
