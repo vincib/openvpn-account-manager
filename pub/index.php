@@ -77,7 +77,9 @@ while ($line=$stmt->fetch()) {
     echo "<td>".date_my2fr($line["updated"])."</td>";
     echo "<td>".date_my2fr($line["used"],true)."</td>";
     echo "<td>".(($line["usetotp"])?"Yes":"No")."</td>";
-    echo "<td>".$line["ip"]."</td>";
+    echo "<td>".$line["ip"];
+    if ($line["ipv6"]) echo " ".$line["ipv6"];
+    echo "</td>";
     echo "</tr>";
 }
 ?>

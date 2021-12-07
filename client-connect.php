@@ -25,8 +25,11 @@ if (!($me=$stmt->fetch())) {
 }
 
 if ($me["ip"]=="") exit(0);
-
-file_put_contents($argv[1],"ifconfig-push ".$me["ip"]." ".long2ip(ip2long($me["ip"])+1)."\n");
+$ipv6="";
+if (trim($me["ipv6"])) {
+    $ipv6="\nifconfig-push-ipv6 ".$me["ipv6"];
+}
+file_put_contents($argv[1],"ifconfig-push ".$me["ip"]." ".long2ip(ip2long($me["ip"])+1).$ipv6."\n");
 
 exit(0);
 
