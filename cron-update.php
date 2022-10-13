@@ -10,17 +10,18 @@ if (isset($argv[1]) && $argv[1]=="verbose") $verbose=true;
 define("SKIP_IDENTITY_CONTROL",1);
 require_once("head.php");
 
-$d=opendir($updatespool);
-while (($c=readdir($d))!==false) {
-    if (is_file($updatespool."/".$c)) {
-        rename($updatespool."/".$c, $updatespool."/".$c.".tmp");
-        list($user,$date)=explode("|",file_get_contents($updatespool."/".$c.".tmp"));
-        if ($verbose) echo date("Y-m-d H:i:s")." Updating user $user for date $date \n";
-        if ($user && $date) {
-            $db->exec("UPDATE users SET used='".addslashes($date)."' WHERE username='".addslashes($user)."';");
+if($d=opendir($updatespool)) {
+    while (($c=readdir($d))!==false) {
+        if (is_file($updatespool."/".$c)) {
+            rename($updatespool."/".$c, $updatespool."/".$c.".tmp");
+            list($user,$date)=explode("|",file_get_contents($updatespool."/".$c.".tmp"));
+            if ($verbose) echo date("Y-m-d H:i:s")." Updating user $user for date $date \n";
+            if ($user && $date) {
+                $db->exec("UPDATE users SET used='".addslashes($date)."' WHERE username='".addslashes($user)."';");
+            }
+            @unlink($updatespool."/".$c.".tmp");
+            if ($verbose) echo date("Y-m-d H:i:s")." done \n";
         }
-        @unlink($updatespool."/".$c.".tmp");
-        if ($verbose) echo date("Y-m-d H:i:s")." done \n";
     }
 }
 
