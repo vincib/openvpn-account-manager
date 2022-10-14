@@ -11,6 +11,10 @@ define("SKIP_IDENTITY_CONTROL",1);
 require_once("head.php");
 
 $d=opendir($updatespool);
+if (!$d) {
+   echo "Can't oepn $updatespool, please check\n";
+   exit();
+}
 while (($c=readdir($d))!==false) {
     if (is_file($updatespool."/".$c)) {
         rename($updatespool."/".$c, $updatespool."/".$c.".tmp");
