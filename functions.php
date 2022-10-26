@@ -128,7 +128,10 @@ function csrf_get($return=false) {
  * if a token is invalid or expired, an $msg is raised, that can be displayed
  */
 function csrf_check($token=null) {
-    global $db;
+    global $db,$istokenadmin;
+
+    // skip CSRF check if I'm a bearer token-based admin
+    if (isset($istokenadmin) && $istokenadmin) return true;
 
     if (is_null($token)) $token=$_POST["csrf"];
 

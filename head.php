@@ -15,8 +15,17 @@ try {
 }
 
 session_start();
+$recvtoken=false;
+if (isset($_SERVER['HTTP_AUTHORIZATION']) && preg_match('#bearer\s(.*)#i',$_SERVER['HTTP_AUTHORIZATION'],$mat)) {
+   $recvtoken=$mat[1];
+}
+$istokenadmin=(isset($token) && $token!==false && $token==$recvtoken);
+if ($istokenadmin) {
+   $_SESSION["username"]="token-admin";
+}
+
 if (!defined("SKIP_IDENTITY_CONTROL")) { 
-    if (!isset($_SESSION["username"])) {
+    if (!isset($_SESSION["username"]) && !$istokenadmin) {
         header("Location: login.php");
         exit();
     }
