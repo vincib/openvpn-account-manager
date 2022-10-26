@@ -75,7 +75,7 @@ while ($line=$stmt->fetch()) {
     echo "<td>".$line["groupname"]."</td>";
     echo "<td>".date_my2fr($line["created"])."</td>";
     echo "<td>".date_my2fr($line["updated"])."</td>";
-    echo "<td>".date_my2fr($line["used"])."</td>";
+    echo "<td>".date_my2fr($line["used"],true)."</td>";
     echo "<td>".(($line["usetotp"])?"Yes":"No")."</td>";
     echo "<td>".$line["ip"]."</td>";
     echo "</tr>";
