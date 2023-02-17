@@ -7,7 +7,7 @@ require_once("header.php");
 $sql="";
 $ss="";
 if (isset($_GET["s"])) {
-    $search=trim(preg_replace("#[^a-z0-9-]#","",strtolower($_GET["s"])));
+    $search=trim(preg_replace("#[^_@.a-z0-9-]#","",strtolower($_GET["s"])));
     if ($search) {
         $sql.=" AND username like '%".addslashes($search)."%'";
         $ss.="&s=".urlencode($search);
