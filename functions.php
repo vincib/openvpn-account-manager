@@ -30,7 +30,7 @@ var_dump( cidr_range( "192.168.0.0/24" ) );          // string(27) "192.168.0.0 
 function allocate_ip($username="") {
     global $db;
     // clean users in no group
-    $db->exec("UPDATE users SET ip='' WHERE groupname='';");
+    $db->exec("UPDATE users SET ip='', ipv6='' WHERE groupname='';");
     $stmt = $db->prepare("SELECT * FROM users WHERE username=?;");
     $stmt->execute(array($username));
     $edit=$stmt->fetch();
@@ -49,7 +49,7 @@ function allocate_ip($username="") {
         }
         echo "group change";
         // ip is set BUT BAD : reset it to null, will check for another one (eg: group change)
-        $stmt=$db->prepare("UPDATE users SET ip='' WHERE username=?;");
+        $stmt=$db->prepare("UPDATE users SET ip='',ipv6='' WHERE username=?;");
         $stmt->execute(array($username));
     }
     // IP is empty or incorrect, user need to get one.
@@ -69,13 +69,19 @@ function allocate_ip($username="") {
     for($i=$start;$i<=$end;$i++) {
         if (!isset($pool[$i]) && ( ($i & 63)!=0 )) { // skip also IPs ending by .0 (for windows, just in case...)
             $found=true;
-            $newip=long2ip($i*4);
+            $newip=long2ip($i*4+2); // we need the 3 (and 2nd for the peer) IP of a /30 for windows box !
             break;
         }
     }
+    $newipv6="";
+    if ($group["cidr6"]) { // very simple & crude management, should be enhanced...
+        $last=substr($newip,strrpos($newip,".")+1);
+        $newipv6=substr($group["cidr6"],0,strpos($group["cidr6"],"/")).$last;
+    }
+    
     if ($found) {
-        $stmt=$db->prepare("UPDATE users SET ip=? WHERE username=?;");
-        $stmt->execute(array($newip,$username));
+        $stmt=$db->prepare("UPDATE users SET ip=?,ipv6=? WHERE username=?;");
+        $stmt->execute(array($newip,$newipv6,$username));
         return true;
     }
     return false;
