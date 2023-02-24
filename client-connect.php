@@ -32,6 +32,11 @@ if (trim($me["ipv6"])) {
 }
 file_put_contents($argv[1],"ifconfig-push ".$me["ip"]." ".long2ip(ip2long($me["ip"])+1).$ipv6."\n");
 
+// DNS
+if ($dnsserver) {
+    file_put_contents($argv[1],'push "dhcp-option DNS '.$dnsserver.'"'."\n",FILE_APPEND);
+}
+
 // Log what we're doing.
 openlog("client-connect", LOG_PID, LOG_LOCAL4);
 $ip=getenv("trusted_ip");
