@@ -69,7 +69,7 @@ function allocate_ip($username="") {
     for($i=$start;$i<=$end;$i++) {
         if (!isset($pool[$i]) && ( ($i & 63)!=0 )) { // skip also IPs ending by .0 (for windows, just in case...)
             $found=true;
-            $newip=long2ip($i*4+2); // we need the 3 (and 2nd for the peer) IP of a /30 for windows box !
+            $newip=long2ip($i*4);
             break;
         }
     }
