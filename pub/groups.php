@@ -8,10 +8,10 @@ if ($timeout_enabled && count($_POST)) {
     }
     if (!$error) {
         foreach($_POST as $k=>$v) {
-            if (substr($v,0,15)=="timeoutminutes_") {
-                $name=substr($v,15);
+            if (substr($k,0,15)=="timeoutminutes_") {
+                $name=substr($k,15);
                 $mb=$_POST["timeouttraffic_".$name];
-                $db->exec("UPDATE groups SET timeoutminutes=".intval($v).", timeouttraffic=".intval($mv)." WHERE name='".addslashes($name)."';");
+                $db->exec("UPDATE groups SET timeoutminutes=".intval($v).", timeouttraffic=".intval($mb)." WHERE name='".addslashes($name)."';");
             }
         }
         
@@ -59,9 +59,10 @@ while ($res=$stmt->fetch()) {
 </table>
     <?php  if ($timeout_enabled) {
         ?>
-        <input type="submit" name="go" value="Edit the timeout to disconnect clients on this group"/>
+        <input type="submit" name="go" class="btn btn-primary" value="Edit the timeout to disconnect clients on this group"/>
         <?php
     }
+?>
 </form>
     
 </div>
