@@ -60,6 +60,9 @@ if (isset($_POST["username"])) {
             }
         }
     }
+    if (!$error && $timeout_enabled) {
+        $sql.=", timeoutexception=".intval($_POST["timeoutexception"])." ";
+    }
     if (!$error) {
         // EDIT
         if ($_POST["id"]) {
@@ -129,8 +132,16 @@ while ($res=$stmt->fetch()) {
 
         <div class="row">
         <div class="col-6">
+           <p>
         <input type="checkbox" value="1" id="isadmin" name="isadmin" <?php if ($edit["isadmin"]) echo "checked=\"checked\""; ?>>
         <label for="isadmin">Is it an account administrator?</label>
+           </p>
+<?php if ($timeout_enabled) { ?>
+           <p>
+        <input type="checkbox" value="1" id="timeoutexception" name="timeoutexception" <?php if ($edit["timeoutexception"]) echo "checked=\"checked\""; ?>>
+        <label for="timeoutexception">This account should not be killed automatically in case of timeout</label>
+              </p>
+                <?php } ?>
         </div>
         <div class="col-6">
 <?php if ($edit["usetotp"]) {?>

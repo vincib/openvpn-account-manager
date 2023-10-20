@@ -30,13 +30,15 @@ function bytotalonline($a,$b) {
 }
 
 $data=json_decode(file_get_contents(__DIR__."/data.json"),true);
-if (!$data) $data=["lastts"=>0, "sessions"=>[] ];
+if (!$data) $data=["lastts"=>0, "sessions"=>[], "traffic"=>[] ];
 $now=time();
 // yesterdaymorning
 $yesterdaymorning=mktime(0,0,0, date("m",time()-86400), date("d",time()-86400), date("Y",time()-86400) );
 
 // DATA : sessions is a list of sessionid => data (including "in_offset" and "out_offset" which are the bytes in/out at midnight to remove for next day report
 // lastts = last time it was updated
+// traffic = list of "sessionid" => [ "timestamp1" => "total bytes 1", "timestamp2" => total bytes 2" ...]
+// we keep 1 hour and 1 minute of history, to be able to disconnect users when they do too little traffic
 
 $f=fsockopen("localhost","22223",$error,$msg,4);
 fputs($f,"status\n");
@@ -147,13 +149,14 @@ trouvez ci-joint les 2 rapports quotidiens de l'accès au VPN.
         } // send mail to everyone
     }
     // close all sessions
-    $data= ["lastts"=>$now, "sessions"=>[] ];
+    $data= ["lastts"=>$now, "sessions"=>[], "traffic" => [] ];
     foreach($clients as $id=>$c) {
         if ($c["user"]=="UNDEF") continue;
         $data["sessions"][$id]=$c;
         $data["sessions"][$id]["offset_in"]=$c["in"];
         $data["sessions"][$id]["offset_out"]=$c["out"];
         $data["sessions"][$id]["since"]=$now; // on commence les sessions à minuit, pas à leur heure de connexion réelle.
+        $data["traffic"][$id][$now]=$c["in"]+$c["out"];
     }
 
 } else {
@@ -168,13 +171,24 @@ trouvez ci-joint les 2 rapports quotidiens de l'accès au VPN.
               // new session id, memorise it 
               $data["sessions"][$id]= $c;
           }
+          $data["traffic"][$id][$now]=$c["in"]+$c["out"];
       }
       foreach($data["sessions"] as $id=>$c) {
           if ( !isset($clients[$id]) && !isset($data["sessions"][$id]["end"]) ) {
               $data["sessions"][$id]["end"]=$now;
+              unset($data["traffic"][$id]);
           }
       }
-}
+      // remove data older than 61 minutes from traffic hash :
+      foreach($data["traffic"] as $k=>$v) {
+          foreach($v as $kk=>$vv)
+              if ( ($now-$kk)>3660) unset($data["traffic"][$k][$kk]);
+      }
+
+      // not a new day: we compute the timeout if sessions, if a session made less then the planned traffic, remove it
+      kill_timeouted_sessions($data);
+      
+} // else : not a new day
 
 
 

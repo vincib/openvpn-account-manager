@@ -15,3 +15,6 @@ $vpnname="MyVPN";
 
 // DNS server to push to clients, if any
 $dnsserver="";
+
+$timeout_enabled = true;
+

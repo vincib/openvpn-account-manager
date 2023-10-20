@@ -25,6 +25,17 @@ try {
 }
 
 
+// upgrade for timeout management
+try {
+    $db->exec("ALTER TABLE users ADD timeoutexception INTEGER;");
+    $db->exec("CREATE INDEX timeoutexception ON users (timeoutexception);");
+    $db->exec("ALTER TABLE groups ADD timeoutminutes INTEGER;");
+    $db->exec("ALTER TABLE groups ADD timeouttraffic INTEGER;");
+} catch (PDOException $e) {
+    echo "Timeout management already initialized, skipping...\n";
+}
+
+
 $db->query("REPLACE INTO users (username,password,isadmin,totp,usetotp,created,updated,used) VALUES ('admin','".password_hash($password,PASSWORD_DEFAULT)."', 1,'',0,datetime('now'),datetime('now'),null);");
 echo "password for admin account is now ".$password."\n";
 
