@@ -29,8 +29,8 @@ function bytotalonline($a,$b) {
     return 0;
 }
 
-$data=json_decode(file_get_contents(__DIR__."/data.json"),true);
-if (!$data) $data=["lastts"=>0, "sessions"=>[], "traffic"=>[] ];
+$data=json_decode(file_get_contents($statsdb),true);
+if (!$data) $data=["lastts"=>0, "sessions"=>[], "traffic"=>[], "killed"=> [] ];
 $now=time();
 // yesterdaymorning
 $yesterdaymorning=mktime(0,0,0, date("m",time()-86400), date("d",time()-86400), date("Y",time()-86400) );
@@ -114,6 +114,14 @@ if ( date("Y-m-d",$data["lastts"]) != date("Y-m-d",$now) ) {
         }
         fclose($f);
 
+        $killed="/tmp/".date("Y-m-d",$now)."-daily-vpn-killed.csv";
+        $f=fopen($killed,"wb");
+        fputs($f,"username;session;when;startmeasure;endmeasure;trafficmb\n");
+        foreach($data["killed"] as $c) {
+            fputs($f,$c."\n");
+        }
+        fclose($f);
+
         // send it by mail : 
         foreach($recipients as $recipient) {
             echo "sending mail to $recipient\n";
@@ -135,11 +143,13 @@ if ( date("Y-m-d",$data["lastts"]) != date("Y-m-d",$now) ) {
                 $mail->SMTPAutoTLS = false;
                 $mail->Subject = "rapport VPN du ".date("Y-m-d",$now);
                 $mail->Body    = "Bonjour,
-trouvez ci-joint les 2 rapports quotidiens de l'accès au VPN.
+trouvez ci-joint les 3 rapports quotidiens de l'accès au VPN.
+(details, resume, sessions terminees)
 
 ";
                 $mail->addAttachment($details);
                 $mail->addAttachment($summary);
+                $mail->addAttachment($killed);
                 $mail->send();
                 echo "sent\n";
             } catch (Exception $e) {
@@ -147,9 +157,13 @@ trouvez ci-joint les 2 rapports quotidiens de l'accès au VPN.
             }
            
         } // send mail to everyone
-    }
+
+        unlink($details);
+        unlink($summary);
+        unlink($killed);        
+    } // is it a new day or just the first launch?
     // close all sessions
-    $data= ["lastts"=>$now, "sessions"=>[], "traffic" => [] ];
+    $data= ["lastts"=>$now, "sessions"=>[], "traffic" => [], "killed" => [] ];
     foreach($clients as $id=>$c) {
         if ($c["user"]=="UNDEF") continue;
         $data["sessions"][$id]=$c;
@@ -183,10 +197,13 @@ trouvez ci-joint les 2 rapports quotidiens de l'accès au VPN.
       foreach($data["traffic"] as $k=>$v) {
           foreach($v as $kk=>$vv)
               if ( ($now-$kk)>3660) unset($data["traffic"][$k][$kk]);
+          // and delete terminated sessions:
+          if (isset($data["sessions"][$k]["end"])) 
+              unset($data["traffic"][$k]);
       }
 
       // not a new day: we compute the timeout if sessions, if a session made less then the planned traffic, remove it
-      kill_timeouted_sessions($data);
+      kill_timedout_sessions();
       
 } // else : not a new day
 
@@ -194,7 +211,7 @@ trouvez ci-joint les 2 rapports quotidiens de l'accès au VPN.
 
 $data["lastts"]=$now;
 
-file_put_contents(__DIR__."/data.json",json_encode($data));
+file_put_contents($statsdb,json_encode($data));
 
 
 

@@ -4,6 +4,7 @@
         "components/jquery": "^3.3",
         "components/font-awesome": "^5.4",
         "spomky-labs/otphp": "^9.1",
-        "bacon/bacon-qr-code": "^2.0"
+        "bacon/bacon-qr-code": "^2.0",
+        "phpmailer/phpmailer": "^6.8"
     }
 }

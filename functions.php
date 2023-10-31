@@ -276,3 +276,71 @@ function pager($offset, $count, $total, $url, $before = "", $after = "", $echo =
     return $return;
 }
 
+
+function kill_timedout_sessions() {
+    global $data,$db,$timeout_default_minutes,$timeout_default_traffic;
+    // first we read all the users and their respective timeout:
+    // I know, it may use a lot of RAM, but if you have more than 1000 users, this software is not for you ;) 
+/*
+CREATE TABLE users (username text PRIMARY KEY, password text, isadmin boolean default false, totp text, usetotp boolean default false, created datetime, updated datetime, used datetime, ip TEXT, groupname TEXT, ipv6 TEXT, timeoutexception INTEGER);
+CREATE TABLE groups (name TEXT PRIMARY KEY, cidr TEXT, cidr6 TEXT, timeoutminutes INTEGER, timeouttraffic INTEGER);
+*/
+    $userto=[];
+    $stmt = $db->prepare("SELECT username, timeoutexception, timeoutminutes, timeouttraffic FROM users LEFT JOIN groups ON groups.name=users.groupname;");
+    $stmt->execute();
+    while ($line = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        if ($line["timeoutexception"]=="1") {
+            $userto[$line["username"]]=[
+                "minutes" => 0,                
+                "traffic" => 0,            ]; 
+        } else {
+            $userto[$line["username"]]=[
+                "minutes" => (!is_null($line["timeoutminutes"]))?$line["timeoutminutes"]:$timeout_default_minutes,
+                "traffic" => (!is_null($line["timeouttraffic"]))?$line["timeouttraffic"]:$timeout_default_traffic,                
+            ]; 
+        }
+    }    
+//    print_r($userto);
+    // now we take all the sessions, search their users, and see if we need to kill those:  
+//    print_r($data); // ["sessions"][$id]["user"] & ["traffic"]["id"] list of ts=>bytes
+    $killlist=[];
+    foreach($data["traffic"] as $id=>$ts) {
+        // search for the user.
+        $user=$data["sessions"][$id]["user"];
+        if (!$user || !isset($userto[$user])) {
+            echo "no timeout information for $user ($id), skipping\n";
+        }
+        // now search for the last ts and the one at least x minutes before.
+        $maxts=0; $maxb=0;
+        $mints=0; $minb=0;
+        $older=time()-60*$userto[$user]["minutes"];
+        foreach($ts as $t=>$b) {
+            if ($t<$older && $mints<$t) {
+                $mints=$t;
+                $minb=$b;
+            } 
+            if ($maxts<$t) {
+                $maxts=$t;
+                $maxb=$b;
+            }
+        }
+        if ($mints!=0) { // signifie qu'on a au moins X minutes de traffic :            
+            if ( ($maxb-$minb) < ($userto[$user]["traffic"]*1048576 ) ) {
+//                echo "I shall kill $user ($id) since traffic between ".date("Y-m-d H:i:s",$mints)." and ".date("Y-m-d H:i:s",$maxts)." is ".round(($maxb-$minb)/1048576,2)."\n";
+                $killlist[]=$id;
+                $data["killed"][]=$user.";".$id.";".date("H:i:s",time()).";".date("H:i:s",$mints).";".date("H:i:s",$maxts).";".round(($maxb-$minb)/1048576,2);
+            } else {
+//                echo "I will NOT kill $user ($id) since traffic between ".date("Y-m-d H:i:s",$mints)." and ".date("Y-m-d H:i:s",$maxts)." is ".round(($maxb-$minb)/1048576,2)."\n";
+            }            
+        }
+    } // for each traffic measured...
+    // kill the requested sessions : 
+    $f=fsockopen("localhost","22223",$error,$msg,4);
+    foreach($killlist as $kill) {
+        fputs($f,"client-kill ".$kill."\n");
+        fgets($f,1024); // get the success line ...
+    }
+    fclose($f);
+}
+
+

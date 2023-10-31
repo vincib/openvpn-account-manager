@@ -18,3 +18,5 @@ $dnsserver="";
 
 $timeout_enabled = true;
 
+$timeout_default_minutes = 10; // if a user is not in a group, use these parameters as default 
+$timeout_default_traffic = 2;
