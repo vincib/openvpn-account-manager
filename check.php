@@ -39,8 +39,7 @@ if (!password_verify($password,$me["password"])) {
     echo "Password incorrect\n";
     exit(1);
 }
-@file_put_contents($updatespool."/".microtime(true),$username."|".date("Y-m-d H:i:s"));
-//$db->exec("UPDATE users SET used=datetime('now') WHERE username='".addslashes($username)."';");
+$db->exec("UPDATE users SET used='".date('Y-m-d H:i:s")."' WHERE username='".addslashes($username)."';");
 echo "OK\n";
 exit(0);
 

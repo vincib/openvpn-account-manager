@@ -13,7 +13,7 @@ switch($_POST["action"]) {
 case "2fa":
     $username=preg_replace('#[^0-9a-z-]#','',$_POST["username"]);
     $totp=TOTP::create();
-    $totp->setLabel($username.'@'.$vpnname);
+    $totp->setLabel($username.'@'.$conf["vpnname"]);
     echo $totp->getProvisioningUri();
     break;
 }
