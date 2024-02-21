@@ -6,6 +6,7 @@ $password=substr(md5(mt_rand().mt_rand()),0,12);
 define("SKIP_IDENTITY_CONTROL",1);
 require_once("head.php");
 
+// TODO : change the create depending on the mysql or sqlite dsn? 
 try {
     $db->exec("CREATE TABLE users (username text PRIMARY KEY, password text, isadmin boolean default false, totp text, usetotp boolean default false, created datetime, updated datetime, used datetime);");
     $db->exec("CREATE TABLE csrf (cookie char(32) , token char(32), created datetime, primary key (cookie,token));");
