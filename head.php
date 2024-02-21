@@ -19,7 +19,7 @@ $recvtoken=false;
 if (isset($_SERVER['HTTP_AUTHORIZATION']) && preg_match('#bearer\s(.*)#i',$_SERVER['HTTP_AUTHORIZATION'],$mat)) {
    $recvtoken=$mat[1];
 }
-$istokenadmin=(isset($token) && $token!==false && $token==$recvtoken);
+$istokenadmin=(isset($conf["token"]) && $conf["token"]!==false && $conf["token"]==$recvtoken);
 if ($istokenadmin) {
    $_SESSION["username"]="token-admin";
 }
