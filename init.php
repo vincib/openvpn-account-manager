@@ -24,6 +24,13 @@ try {
 }
 
 
-$db->query("REPLACE INTO users (username,password,isadmin,totp,usetotp,created,updated,used) VALUES ('admin','".password_hash($password,PASSWORD_DEFAULT)."', 1,'',0,datetime('now'),datetime('now'),null);");
+// upgrade for group management
+try {
+    $db->exec("CREATE TABLE `allocation` (  `ip` varchar(128) NOT NULL,  `user` varchar(512) DEFAULT NULL,  `group` varchar(128) DEFAULT '',  PRIMARY KEY (`ip`),  KEY `group` (`group`,`user`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
+} catch (PDOException $e) {
+    echo "Allocation table already initialized, skipping...\n";
+}
+
+$db->query("REPLACE INTO users (username,password,isadmin,totp,usetotp,created,updated,used) VALUES ('admin','".password_hash($password,PASSWORD_DEFAULT)."', 1,'',0,'".date('Y-m-d H:i:s")."','".date('Y-m-d H:i:s")."',null);");
 echo "password for admin account is now ".$password."\n";
 

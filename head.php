@@ -8,7 +8,7 @@ if (!isset($suffix)) $suffix="";
 
 // check we are identified :
 try {
-    $db = new PDO('sqlite:'.$sqlitedb.$suffix);
+    $db = new PDO($conf["db"]["dsn"],$conf["db"]["username"],$conf["db"]["password"]);
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
     die ('DB file error, please check application '.print_r($e,true));

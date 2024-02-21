@@ -111,7 +111,7 @@ function csrf_get($return=false) {
     }
     if ($token=="") {
         $token=md5(mt_rand().mt_rand().mt_rand());
-        $new=$db->prepare("INSERT INTO csrf (cookie,token,created) VALUES (?,?,datetime('now'));");
+        $new=$db->prepare("INSERT INTO csrf (cookie,token,created) VALUES (?,?,'".date("Y-m-d H:i:s")."');");
         $new->execute(array($_SESSION["csrf"],$token));
     }
     if ($return)
@@ -151,7 +151,7 @@ function csrf_check($token=null) {
         return 0; // invalid csrf cookie
     }
     $db->exec("DELETE FROM csrf WHERE cookie='".addslashes($_SESSION["csrf"])."' AND token='".addslashes($token)."';");
-    $db->exec("DELETE FROM csrf WHERE created<datetime('now','1 days');");
+    $db->exec("DELETE FROM csrf WHERE created<'".date('Y-m-d H:i:s",time()-86400)."';");
     return 1;
 }
 
