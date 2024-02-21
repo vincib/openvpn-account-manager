@@ -6,6 +6,7 @@ require_once("header.php");
 
 $sql="";
 $ss="";
+$search="";
 if (isset($_GET["s"])) {
     $search=trim(preg_replace("#[^a-z0-9-]#","",strtolower($_GET["s"])));
     if ($search) {

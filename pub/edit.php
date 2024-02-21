@@ -69,11 +69,11 @@ if (isset($_POST["username"])) {
             if (isset($_POST["password"]) && $_POST["password"]) {
                 $sql.=", password='".addslashes(password_hash($_POST["password"],PASSWORD_DEFAULT))."'";
             }
-            $db->exec("UPDATE users SET updated='".date('Y-m-d H:i:s")."', username='".addslashes($_POST["username"])."', groupname='".addslashes($_POST["groupname"])."', isadmin=".intval($_POST["isadmin"])." $sql WHERE username='".addslashes($_POST["id"])."';");
+            $db->exec("UPDATE users SET updated='".date("Y-m-d H:i:s")."', username='".addslashes($_POST["username"])."', groupname='".addslashes($_POST["groupname"])."', isadmin=".intval($_POST["isadmin"])." $sql WHERE username='".addslashes($_POST["id"])."';");
             $info="User account changed successfully";
         } else {
             // ADD 
-            $db->exec("INSERT INTO users (username,groupname,password,created,updated,isadmin,usetotp) VALUES ('".addslashes($_POST["username"])."','".addslashes($_POST["groupname"])."','".addslashes(password_hash($_POST["password"],PASSWORD_DEFAULT))."','".date('Y-m-d H:i:s")."','".date('Y-m-d H:i:s")."',".intval($_POST["isadmin"]).",0);");
+            $db->exec("INSERT INTO users (username,groupname,password,created,updated,isadmin,usetotp) VALUES ('".addslashes($_POST["username"])."','".addslashes($_POST["groupname"])."','".addslashes(password_hash($_POST["password"],PASSWORD_DEFAULT))."','".date("Y-m-d H:i:s")."','".date("Y-m-d H:i:s")."',".intval($_POST["isadmin"]).",0);");
             if ($sql) {
                 $db->exec("UPDATE users SET username='".addslashes($_POST["username"])."' $sql WHERE username='".addslashes($_POST["username"])."';");
             }

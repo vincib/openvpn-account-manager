@@ -3,7 +3,7 @@
         "components/bootstrap": "^4.1",
         "components/jquery": "^3.3",
         "components/font-awesome": "^5.4",
-        "spomky-labs/otphp": "^9.1",
+        "spomky-labs/otphp": "^11.2",
         "bacon/bacon-qr-code": "^2.0"
     }
 }

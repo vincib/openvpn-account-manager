@@ -151,7 +151,7 @@ function csrf_check($token=null) {
         return 0; // invalid csrf cookie
     }
     $db->exec("DELETE FROM csrf WHERE cookie='".addslashes($_SESSION["csrf"])."' AND token='".addslashes($token)."';");
-    $db->exec("DELETE FROM csrf WHERE created<'".date('Y-m-d H:i:s",time()-86400)."';");
+    $db->exec("DELETE FROM csrf WHERE created<'".date("Y-m-d H:i:s",time()-86400)."';");
     return 1;
 }
 
