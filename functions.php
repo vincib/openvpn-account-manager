@@ -64,7 +64,6 @@ function allocate_ip($username="") {
         $ipother=ip2long($other["ip"])/4;
         $pool[$ipother]=1;
     }
-    print_r($pool);
     $found=false;
     for($i=$start;$i<=$end;$i++) {
         if (!isset($pool[$i]) && ( ($i & 63)!=0 )) { // skip also IPs ending by .0 (for windows, just in case...)
