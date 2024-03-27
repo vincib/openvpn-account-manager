@@ -18,9 +18,11 @@ $username=getenv("username");
 $ip=getenv("trusted_ip");
 openlog("openvpn-manager", LOG_PID, LOG_LOCAL4);
 
+/*
 file_put_contents("/var/www/tmp/log",print_r(getenv(),true)."\n",FILE_APPEND);
 file_put_contents("/var/www/tmp/log",file_get_contents(getenv("client_connect_deferred_file"))."\n",FILE_APPEND);
 file_put_contents("/var/www/tmp/log",file_get_contents(getenv("client_connect_config_file"))."\n",FILE_APPEND);
+*/
 
 $stmt = $db->prepare("SELECT * FROM users WHERE username=?;");
 $stmt->execute(array($username));
@@ -45,7 +47,7 @@ $stmt=$db->prepare("UPDATE allocation SET user=? WHERE ip=?;");
 $stmt->execute([$username,$alloc["ip"]]);
 $db->exec("UNLOCK TABLES;");
 
-file_put_contents($argv[1],"ifconfig-push ".$alloc["ip"]." ".long2ip(ip2long($me["ip"])+1)."\n");
+file_put_contents($argv[1],"ifconfig-push ".$alloc["ip"]." ".long2ip(ip2long($alloc["ip"])+1)."\n");
 
 // DNS
 if (isset($conf["dnsserver"]) && $conf["dnsserver"]) {
