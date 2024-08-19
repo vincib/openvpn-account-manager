@@ -47,14 +47,16 @@ list($username,$domain)=explode("@",$ownerDetails->getEmail(),2);
 // search for that email in the login list:
 // $_SESSION["id"] is the oauth id in the DB, get an IP, mark session as status=1
 $oauthid=$_SESSION["id"];
+$username2=str_replace(".","",$username);
 
-$stmt = $db->prepare("SELECT * FROM users WHERE username=?;");
-$stmt->execute(array($username));
+$stmt = $db->prepare("SELECT * FROM users WHERE username=? OR username=?;");
+$stmt->execute(array($username,$username2));
 if (!($me=$stmt->fetch())) {
-    syslog(LOG_NOTICE, " Login not found user=".$username." ip=".$ip);
+    syslog(LOG_NOTICE, " Login not found user=".$username." or ".$username2." ip=".$ip);
     echo "Login not found, please retry or contact your administrator\n";
     exit(1);
 }
+$username=$me["username"];
 
 // Cherche une IP au hasard, libre, avec verrou, pour cet usager :
 $db->exec("LOCK TABLES allocation WRITE, oauth_session WRITE;"); 

@@ -251,7 +251,7 @@ function nothing_loop() {
     static $lastcheck=0;
     // when nothing happened, maybe we need to do stuff anyway?
 
-    echo "status:$status\n";
+//    echo "status:$status\n";
 
     // at boottime, once we know we have an openvpn, and every 120 sec, (when openvpn doesn't send us anything), we ask openvpn for status:
     if ($lastcheck < (time()-120)) {
