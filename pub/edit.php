@@ -28,7 +28,7 @@ if (isset($_POST["username"])) {
     }
 
     // username syntax
-    if (!$error && !preg_match('#^[0-9a-z-\.]+$#',$_POST["username"])) {
+    if (!$error && !preg_match('#^[0-9a-z\.@-]+$#',$_POST["username"])) {
         $error="The username contains forbidden characters, please verify";
     }
 
