@@ -33,12 +33,15 @@ Unknown line:>CLIENT:ENV,END
 define("SKIP_IDENTITY_CONTROL",1);
 require_once("head.php");
 
-$ovs=@stream_socket_client("unix:///run/openvpn/server.sock", $error_code,$error_message,10);
-if (!$ovs) {
-    echo "Can't connect to openvpn, will retry later...\n";
-    sleep(2);
-    exit();
-}
+$ovs=false;
+do {
+    $ovs=@stream_socket_client("unix:///run/openvpn/server.sock", $error_code,$error_message,10);
+    if (!$ovs) {
+        echo "Can't connect to openvpn, will retry in 2 seconds...\n";
+        sleep(2);
+    }
+} while (!$ovs);
+
 
 $write=[]; $except=[];
 /*
@@ -59,7 +62,7 @@ while (true) {
     // let's read a line on the socket (or timeout at 5sec)
     $read=[$ovs];
     // TODO : replace the select every 2 seconds by a watch file using a inotify socket, that could be selected here too ;) 
-    $changed = stream_select($read,$write,$except,2);
+    $changed = stream_select($read,$write,$except,0,100000);
     if ($changed==0) {
         nothing_loop();
         continue;
@@ -101,8 +104,11 @@ while (true) {
             $status=4;
             break;
         }
+        if (preg_match('#^>CLIENT:ENV,#',$line)) {
+            break;
+        }
 
-        echo "Unknown line:$line\n";
+        echo "received unused line: $line\n";
         break;
 
     case 1: // getting status. We memorize everything in a hash until we get END. Then call openvpn_status();
@@ -155,9 +161,13 @@ while (true) {
 } // main loop 
 
 
+/**
+ * function called when we asked openvpn for its status.
+ * and openvpn finished sending all information to us.
+ * $data is the lines sent by openvpn, that this function parses.
+ */
 function openvpn_status($data) {
     global $db;
-    // extract the status of openvpn from a list of lines from the unix socket
     $in=""; $fields=[];
     foreach($data as $line) {
         $l=explode(chr(9),$line);
@@ -177,7 +187,6 @@ function openvpn_status($data) {
         }
     } // read all the status lines
 
-    //print_r($status);
     echo date("Y-m-d H:i:s")." OpenVPN status, ".count((isset($status["CLIENT_LIST"]))?$status["CLIENT_LIST"]:[])." clients connected\n";
     /* The following code should never be used: there should be no killed sessions that I don't know about,
      * neither *created* sessions that I don't know about...
@@ -215,7 +224,8 @@ function openvpn_status($data) {
 }
 
 
-/** called when a client try to connect.
+/**
+ * called when a client try to connect.
  * we create a session in oauth_session for this one, (status=0) and send the client to the oauth page.
  */
 function openvpn_client_connect($cid,$kid,$data) {
@@ -229,6 +239,11 @@ function openvpn_client_connect($cid,$kid,$data) {
     echo date("Y-m-d H:i:s")." openvpn_client_connect [cid:$cid kid:$kid oauthid:$oauthid]\n";
 }
 
+
+/**
+ * called when a client disconnected
+ * we delete its informations from the DB 
+ */
 function openvpn_client_disconnect($cid,$data) {
     global $db;
     // we purge this session from the DB:
@@ -240,18 +255,20 @@ function openvpn_client_disconnect($cid,$data) {
         return;
     }
     $db->exec("DELETE FROM oauth_session WHERE id=".intval($found["id"]).";");
-    // this one may update nothing if the session never ended anyway (status=0 or 1)
+    // this one may update nothing if the session never started anyway (status=0 or 1)
     $db->exec("UPDATE allocation SET user=NULL, oauthid=NULL WHERE oauthid=".intval($found["id"]).";");
     echo date("Y-m-d H:i:s")." openvpn_client_disconnect [cid:$cid oauthid:".$found["id"]."]\n";
 }
 
 
+/**
+ * function called every once in a while when openvpn did ... nothing special
+ * but thanks to that we can process the sessions that completed
+ * or ask for a status from openvpn.
+ */
 function nothing_loop() {
     global $db,$ovs,$status;
     static $lastcheck=0;
-    // when nothing happened, maybe we need to do stuff anyway?
-
-//    echo "status:$status\n";
 
     // at boottime, once we know we have an openvpn, and every 120 sec, (when openvpn doesn't send us anything), we ask openvpn for status:
     if ($lastcheck < (time()-120)) {
@@ -262,9 +279,10 @@ function nothing_loop() {
         $lastcheck=time();
     }
     
+    // we read the oauth session that completed (status=1) and we tell openvpn about them.
     $stmt = $db->prepare("SELECT * FROM oauth_session WHERE status=?;");
     $stmt->execute([1]);
-    // we take only one at a time : we expect an answer from openvpn after the client-auth has been sent
+
     while ($me=$stmt->fetch()) {
         // those session passed from status=0 to status=1, we send information to openvpn about it (OK + IP)
         $db->exec("UPDATE oauth_session SET status=2,mtime=NOW() WHERE id=".intval($me["id"]).";");
@@ -276,11 +294,12 @@ function nothing_loop() {
         } else {
             fputs($ovs,"client-auth ".$me["cid"]." ".$me["kid"]."\n");
             fputs($ovs,"ifconfig-push ".$ip["ip"]." ".long2ip(ip2long($ip["ip"])+1)."\n");
-            // TODO : handle the dns server here (no need for lydia though)
+            // TODO : handle the dns server here (no need for the customer though)
             fputs($ovs,"END\n");
             $status=4;
-            break; // went well, we break now, only one at a time
+            echo date("Y-m-d H:i:s")." Sent client-auth cid/kid ".$me["cid"]."/".$me["kid"]." oauthid ".$me["id"]."\n";
         }
     }
     
 }
+

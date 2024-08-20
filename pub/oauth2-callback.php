@@ -38,21 +38,13 @@ try {
     exit('Something went wrong, please retry: ' . $e->getMessage());   
 }
 
-/*
-// Use these details to create a new profile
-printf('name: %s<br>', $ownerDetails->getFirstName());
-printf('email: %s<br>', $ownerDetails->getEmail());
-*/
-list($username,$domain)=explode("@",$ownerDetails->getEmail(),2);
-// search for that email in the login list:
-// $_SESSION["id"] is the oauth id in the DB, get an IP, mark session as status=1
+$email=$ownerDetails->getEmail();
 $oauthid=$_SESSION["id"];
-$username2=str_replace(".","",$username);
 
-$stmt = $db->prepare("SELECT * FROM users WHERE username=? OR username=?;");
-$stmt->execute(array($username,$username2));
+$stmt = $db->prepare("SELECT * FROM users WHERE username=?;");
+$stmt->execute(array($email));
 if (!($me=$stmt->fetch())) {
-    syslog(LOG_NOTICE, " Login not found user=".$username." or ".$username2." ip=".$ip);
+    syslog(LOG_NOTICE, " Login not found user=".$username." ip=".$ip);
     echo "Login not found, please retry or contact your administrator\n";
     exit(1);
 }
@@ -77,15 +69,18 @@ $stmt->execute([$oauthid]);
 
 $db->exec("UNLOCK TABLES;");
 
-//file_put_contents($argv[1],"ifconfig-push ".$alloc["ip"]." ".long2ip(ip2long($alloc["ip"])+1)."\n");
-// DNS
-//if (isset($conf["dnsserver"]) && $conf["dnsserver"]) {    file_put_contents($argv[1],'push "dhcp-option DNS '.$conf["dnsserver"].'"'."\n",FILE_APPEND);}
-
 // Log what we're doing.
 syslog(LOG_NOTICE, "Connected user=".$username." ip=".$alloc["ip"]." tunnel_ip=".$alloc["ip"]);
 closelog();
-
-echo "You have been successfully connected to OpenVPN, using IP address ".$alloc["ip"]." You can now close this tab.\n";
-exit(0);
-
+?>
+<html>
+<body>
+<?php
+echo "You have been successfully connected to OpenVPN, using IP address ".$alloc["ip"]." and session ".$oauthid.". You can now close this tab.\n";
+?>
+<script type="text/javascript">
+    window.close();
+</script>
+</body>
+</html>
 
