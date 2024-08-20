@@ -1,0 +1,13 @@
+[Unit]
+Description=OpenVPN socket client for SSO
+After=network.service
+
+[Service]
+Type=exec
+WorkingDirectory=/var/wwww/lydia-vpn
+ExecStart=./socket-client.php
+Restart=always
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
