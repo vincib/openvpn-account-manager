@@ -76,6 +76,7 @@ while (true) {
     // read one line
     $line = stream_get_line($ovs,8192,"\n");
     $line=rtrim($line,"\r"); // we do that because openvpn send \r\n ...
+//    echo date("Y-m-d H:i:s")." LINE $line\n";
 
     if (preg_match('#^>CLIENT:REAUTH,([0-9]+),([0-9]+)$#',$line,$mat)) {
         $stmt = $db->prepare("SELECT * FROM oauth_session WHERE cid=?;");
@@ -232,7 +233,7 @@ function openvpn_status($data) {
     foreach($cids as $id=>$cid) {
         if (!in_array($cid,$sids)) {
             // session destroyed in my absence :/ weird
-            $db->exec("DELETE FROM oauth_session WHERE id=".$id.";");
+//            $db->exec("DELETE FROM oauth_session WHERE id=".$id.";"); // we only delete it later from now on: this session could be reused later by the same user when REAUTH or RECONNECT using auth-token-user token.
             $db->exec("UPDATE allocation SET user=NULL, oauthid=NULL WHERE oauthid=".$id.";");
         }
     }
@@ -253,8 +254,42 @@ function openvpn_status($data) {
  */
 function openvpn_client_connect($cid,$kid,$data) {
     global $ovs,$status,$db,$conf;
-    $stmt=$db->prepare("INSERT INTO oauth_session SET cid=?, kid=?, status=0;");
-    $stmt->execute([$cid,$kid]);
+
+    if (isset($data["session_state"]) && $data["session_state"]=="AuthenticatedEmptyUser" && isset($data["session_id"]) && $data["session_id"]) {
+        // if data contains an already authenticated session, we insert a new oauth_session for the same user.
+        // search for this session 
+        $stmt = $db->prepare("SELECT * FROM oauth_session WHERE session=? AND timeout > UNIX_TIMESTAMP(NOW());");
+        $stmt->execute([$data["session_id"]]);
+        $found=$stmt->fetch();
+        if (!$found) {
+            fputs($ovs,"client-deny $cid $kid \"session not found or expired (1)\"\n");
+            return;
+        }
+        // get a new oauth_session id (since this IS a new session for sure)
+        $stmt=$db->prepare("INSERT INTO oauth_session SET cid=?, kid=?, status=0, session=?, timeout=?;");
+        $stmt->execute([$cid,$kid,$data["session_id"],$found["timeout"]]); // same timeout as parent session ;) 
+        $oauthid = $db->lastInsertId();
+        // session found, now let's find a new IP for this user...
+        $result = open_session($oauthid,$found["username"],$data["untrusted_ip"]);
+
+        if (!$result) {
+            fputs($ovs,"client-deny $cid $kid \"session not found or expired (2)\"\n");
+            return;
+        }
+
+        // got a session, send the informations :
+        fputs($ovs,"client-auth $cid $kid\n");
+        fputs($ovs,"ifconfig-push ".$result." ".long2ip(ip2long($result)+1)."\n");
+        fputs($ovs,"push \"auth-token-user ".base64_encode($data["session_id"])."\"\n");
+        
+        // TODO : handle the dns server here (no need for the customer though)
+        fputs($ovs,"END\n");
+        $status=4;
+        echo date("Y-m-d H:i:s")." RECONNECT: Sent client-auth cid/kid ".$cid."/".$kid." oauthid ".$oauthid."\n";
+    }
+
+    $stmt=$db->prepare("INSERT INTO oauth_session SET cid=?, kid=?, status=0, session=?, timeout=?;");
+    $stmt->execute([$cid,$kid,$data["session_id"],time()+$conf["session_timeout"]]);
     $oauthid = $db->lastInsertId();
     $key=md5($conf["secretstring"].$oauthid.$conf["secretstring"]);
     fputs($ovs,"client-pending-auth $cid $kid WEB_AUTH::".$conf["baseurl"]."oauth2.php?id=".$oauthid."&key=".$key." 180\n"); // you got 3 min to authenticate, seems enough, no?
@@ -277,7 +312,7 @@ function openvpn_client_disconnect($cid,$data) {
         echo date("Y-m-d H:i:s")." WEIRD: can't find destroyed session $cid in the DB\n";
         return;
     }
-    $db->exec("DELETE FROM oauth_session WHERE id=".intval($found["id"]).";");
+//    $db->exec("DELETE FROM oauth_session WHERE id=".intval($found["id"]).";"); // later, as timeout says ...
     // this one may update nothing if the session never started anyway (status=0 or 1)
     $db->exec("UPDATE allocation SET user=NULL, oauthid=NULL WHERE oauthid=".intval($found["id"]).";");
     echo date("Y-m-d H:i:s")." openvpn_client_disconnect [cid:$cid oauthid:".$found["id"]."]\n";
@@ -304,6 +339,8 @@ function nothing_loop() {
         $status=1;
         $data=[];
         $lastcheck=time();
+        // cleanup in oauth_session every 2 minutes
+        $db->exec("DELETE FROM oauth_session WHERE timeout IS NOT NULL AND timeout < UNIX_TIMESTAMP(NOW());");
     }
     
     // we read the oauth session that completed (status=1) and we tell openvpn about them.
@@ -321,6 +358,11 @@ function nothing_loop() {
         } else {
             fputs($ovs,"client-auth ".$me["cid"]." ".$me["kid"]."\n");
             fputs($ovs,"ifconfig-push ".$ip["ip"]." ".long2ip(ip2long($ip["ip"])+1)."\n");
+            // we push the session id as a token... (any value is fine) this tells the client that it should use auth-token to reauth later on
+            // in practice (TODO?) we could put the oauth2-refresh-token if we had one from Google, to reauth regularly ? 
+            // but this may put some heavy load on the oauth system, so maybe not 
+            fputs($ovs,"push \"auth-token-user ".base64_encode($me["session"])."\"\n");
+
             // TODO : handle the dns server here (no need for the customer though)
             fputs($ovs,"END\n");
             $status=4;

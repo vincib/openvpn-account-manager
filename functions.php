@@ -269,3 +269,37 @@ function pager($offset, $count, $total, $url, $before = "", $after = "", $echo =
     return $return;
 }
 
+
+/** Open an OPENVPN session, returns the allocated IP address, or false if wrong */
+function open_session($oauthid,$username,$ip) {
+    global $conf,$db;
+    
+    $stmt = $db->prepare("SELECT * FROM users WHERE username=?;");
+    $stmt->execute(array($username));
+    if (!($me=$stmt->fetch())) {
+        syslog(LOG_NOTICE, " Login not found user=".$username." ip=".$ip);
+        //echo "Login not found, please retry or contact your administrator\n";
+        return false;
+    }
+    $username=$me["username"];
+
+    // Cherche une IP au hasard, libre, avec verrou, pour cet usager :
+    $db->exec("LOCK TABLES allocation WRITE, oauth_session WRITE;"); 
+    
+    $stmt=$db->prepare("SELECT * FROM allocation WHERE `group`=? AND user IS NULL ORDER BY RAND() LIMIT 1;");
+    $stmt->execute([(string)$me["groupname"]]);
+    if (!($alloc=$stmt->fetch())) {
+        syslog(LOG_NOTICE, " No available IP for user=".$username." ip=".$ip." group=".$me["groupname"]);
+        //        echo "No available ip, please retry or contact your administrator\n";
+        $db->exec("UNLOCK TABLES;");
+        return false;
+    }
+    $stmt=$db->prepare("UPDATE allocation SET user=?, oauthid=? WHERE ip=?;");
+    $stmt->execute([$username,$oauthid,$alloc["ip"]]);
+
+    $stmt=$db->prepare("UPDATE oauth_session SET status=1, username=? WHERE id=?;");
+    $stmt->execute([$username,$oauthid]);
+
+    $db->exec("UNLOCK TABLES;");
+    return $alloc["ip"];
+}
