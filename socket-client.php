@@ -76,15 +76,38 @@ while (true) {
     // read one line
     $line = stream_get_line($ovs,8192,"\n");
     $line=rtrim($line,"\r"); // we do that because openvpn send \r\n ...
+
+    if (preg_match('#^>CLIENT:REAUTH,([0-9]+),([0-9]+)$#',$line,$mat)) {
+        $stmt = $db->prepare("SELECT * FROM oauth_session WHERE cid=?;");
+        $stmt->execute([$mat[1]]);        
+        $me=$stmt->fetch();
+        if (!$me || !refresh_token($mat[1])) {
+            echo date("Y-m-d H:i:s")." Refresh token failed for session ".$mat[1]."\n";
+        } else {
+            fputs($ovs,"client-auth ".$me["cid"]." ".$me["kid"]."\n");
+            $st2=$db->prepare("SELECT ip FROM allocation WHERE oauthid=?;");
+            $st2->execute([intval($me["id"])]);
+            $ip=$st2->fetch();
+            if (!$ip) {
+                echo date("Y-m-d H:i:s")." WEIRD: no IP in allocation for REAUTH on oauthid:".$me["id"]." cid:".$me["cid"]."\n";
+            } else {
+                fputs($ovs,"ifconfig-push ".$ip["ip"]." ".long2ip(ip2long($ip["ip"])+1)."\n");
+            }
+            fputs($ovs,"END\n");
+            echo date("Y-m-d H:i:s")." Sent client-auth for REAUTH for cid/kid ".$me["cid"]."/".$me["kid"]." oauthid ".$me["id"]."\n";
+            continue;
+        }        
+    }
+
     switch ($status) {
 
     case -1: // at boottime, we expect one line  
         if (preg_match('#^>INFO:OpenVPN#',$line)) {
-            echo "This is an OpenVPN server, fine.\n";
+            echo date("Y-m-d H:i:s")." This is an OpenVPN server, fine.\n";
             $status=0;
             break;
         }
-        echo "Weird line at boot: $line\n";
+        echo date("Y-m-d H:i:s")." Weird line at boot: $line\n";
         break;
 
     case 0: // nothing to do and we get a line, let's print it as of now ;)
@@ -100,7 +123,7 @@ while (true) {
         }
         if (preg_match('#^>HOLD:Waiting for hold release#',$line)) {
             fputs($ovs,"hold release\n");
-            echo "Released held OpenvPN\n";
+            echo date("Y-m-d H:i:s")." Released held OpenvPN\n";
             $status=4;
             break;
         }
@@ -108,7 +131,7 @@ while (true) {
             break;
         }
 
-        echo "received unused line: $line\n";
+        echo date("Y-m-d H:i:s")." received unused line: $line\n";
         break;
 
     case 1: // getting status. We memorize everything in a hash until we get END. Then call openvpn_status();
@@ -198,8 +221,8 @@ function openvpn_status($data) {
         }
     }
 
-    $stmt=$db->prepare("SELECT id,cid FROM oauth_session WHERE status=?;");
-    $stmt->execute([1]);
+    $stmt=$db->prepare("SELECT id,cid FROM oauth_session WHERE status IN (1,2);");
+    $stmt->execute();
     $cids=[];
     while ($c=$stmt->fetch()) {
         $cids[$c["id"]]=$c["cid"];
@@ -260,6 +283,10 @@ function openvpn_client_disconnect($cid,$data) {
     echo date("Y-m-d H:i:s")." openvpn_client_disconnect [cid:$cid oauthid:".$found["id"]."]\n";
 }
 
+
+function refresh_token($token) {
+    return true; // TODO: implement this asynchronously ?
+}
 
 /**
  * function called every once in a while when openvpn did ... nothing special

@@ -7,6 +7,8 @@ use League\OAuth2\Client\Provider\Google;
 
 $provider = new Google($conf["google"]);
 
+$ip=$_SERVER["REMOTE_ADDR"];
+
 if (empty($_GET['state']) || ($_GET['state'] !== $_SESSION['oauth2state'])) {
     
     // State is invalid, possible CSRF attack in progress
@@ -25,7 +27,6 @@ if (!isset($_GET["code"])) {
 // https://vm5.alternc.eu/oauth2-callback.php?state=026c2bb4a2adb827a0ba94a512d0bc0d&code=4%2F0AeaYSHBZJAfL1b_TO_M-ENFgbmc-pAhJ1Ebre6apDWiySOQ3KrJNqUmV-yrwcB7Njt0AxA&scope=email+profile+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile+openid&authuser=1&hd=aaa.octopuce.fr&prompt=none
 
 try {
-
     // Try to get an access token (using the authorization code grant)
     $token = $provider->getAccessToken('authorization_code', [
         'code' => $_GET['code']
@@ -44,7 +45,7 @@ $oauthid=$_SESSION["id"];
 $stmt = $db->prepare("SELECT * FROM users WHERE username=?;");
 $stmt->execute(array($email));
 if (!($me=$stmt->fetch())) {
-    syslog(LOG_NOTICE, " Login not found user=".$username." ip=".$ip);
+    syslog(LOG_NOTICE, " Login not found user=".$email." ip=".$ip);
     echo "Login not found, please retry or contact your administrator\n";
     exit(1);
 }
@@ -64,8 +65,15 @@ if (!($alloc=$stmt->fetch())) {
 $stmt=$db->prepare("UPDATE allocation SET user=?, oauthid=? WHERE ip=?;");
 $stmt->execute([$username,$oauthid,$alloc["ip"]]);
 
-$stmt=$db->prepare("UPDATE oauth_session SET status=1 WHERE id=?;");
-$stmt->execute([$oauthid]);
+$refresh="";
+try {
+    $refresh= $token->getRefreshToken();
+} catch (Exception $e) {
+    syslog(LOG_NOTICE, "Exception asking for a refresh token: ".$e->getMessage());
+}
+
+$stmt=$db->prepare("UPDATE oauth_session SET status=1, refresh_token=? WHERE id=?;");
+$stmt->execute([$refresh,$oauthid]);
 
 $db->exec("UNLOCK TABLES;");
 
