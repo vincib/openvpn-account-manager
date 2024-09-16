@@ -1,13 +1,36 @@
-<?php
+<?php 
 
 define("SKIP_IDENTITY_CONTROL",1);
 require_once("../head.php");
+$ip=$_SERVER["REMOTE_ADDR"];
+
+
+/* Uncomment this block to skip oauth entirely */
+/*
+if (isset($_GET["skip"]) && $_GET["skip"]) {
+    $email="octopuce";
+    $group="";
+    $oauthid=$_GET["id"];
+    $result = open_session($oauthid,$email,$ip);
+
+    if (!$result) {
+        echo "Login not found, please retry or contact your administrator\n";
+        exit(1);
+    }
+    
+    // Log what we're doing.
+    syslog(LOG_NOTICE, "Connected user=".$username." ip=".$ip." tunnel_ip=".$result);
+    closelog();
+    echo '<html><head>     <meta name="viewport" content="width=device-width, initial-scale=0.8, shrink-to-fit=no, minimum-scale=0.8, maximum-scale=0.8, user-scalable=no"></head><body>OK, AUTHID '.$oauthid.' IP '.$result.'</body></html>'; 
+    exit();
+}
+*/
+
 
 use League\OAuth2\Client\Provider\Google;
 
 $provider = new Google($conf["google"]);
 
-$ip=$_SERVER["REMOTE_ADDR"];
 
 if (empty($_GET['state']) || ($_GET['state'] !== $_SESSION['oauth2state'])) {
     
@@ -42,28 +65,12 @@ try {
 $email=$ownerDetails->getEmail();
 $oauthid=$_SESSION["id"];
 
-$stmt = $db->prepare("SELECT * FROM users WHERE username=?;");
-$stmt->execute(array($email));
-if (!($me=$stmt->fetch())) {
-    syslog(LOG_NOTICE, " Login not found user=".$email." ip=".$ip);
+$result = open_session($oauthid,$email,$ip);
+
+if (!$result) {
     echo "Login not found, please retry or contact your administrator\n";
     exit(1);
 }
-$username=$me["username"];
-
-// Cherche une IP au hasard, libre, avec verrou, pour cet usager :
-$db->exec("LOCK TABLES allocation WRITE, oauth_session WRITE;"); 
-
-$stmt=$db->prepare("SELECT * FROM allocation WHERE `group`=? AND user IS NULL ORDER BY RAND() LIMIT 1;");
-$stmt->execute([(string)$me["groupname"]]);
-if (!($alloc=$stmt->fetch())) {
-    syslog(LOG_NOTICE, " No available IP for user=".$username." ip=".$ip." group=".$me["groupname"]);
-    echo "No available ip, please retry or contact your administrator\n";
-    $db->exec("UNLOCK TABLES;");
-    exit(1);
-}
-$stmt=$db->prepare("UPDATE allocation SET user=?, oauthid=? WHERE ip=?;");
-$stmt->execute([$username,$oauthid,$alloc["ip"]]);
 
 $refresh="";
 try {
@@ -71,20 +78,19 @@ try {
 } catch (Exception $e) {
     syslog(LOG_NOTICE, "Exception asking for a refresh token: ".$e->getMessage());
 }
-
-$stmt=$db->prepare("UPDATE oauth_session SET status=1, refresh_token=? WHERE id=?;");
-$stmt->execute([$refresh,$oauthid]);
-
-$db->exec("UNLOCK TABLES;");
+if ($refresh) {
+    $stmt=$db->prepare("UPDATE oauth_session SET refresh_token=? WHERE id=?;");
+    $stmt->execute([$refresh,$oauthid]);
+}
 
 // Log what we're doing.
-syslog(LOG_NOTICE, "Connected user=".$username." ip=".$alloc["ip"]." tunnel_ip=".$alloc["ip"]);
+syslog(LOG_NOTICE, "Connected user=".$username." ip=".$ip." tunnel_ip=".$result);
 closelog();
 ?>
 <html>
 <body>
 <?php
-echo "You have been successfully connected to OpenVPN, using IP address ".$alloc["ip"]." and session ".$oauthid.". You can now close this tab.\n";
+echo "You have been successfully connected to OpenVPN, using IP address ".$result." and session ".$oauthid.". You can now close this tab.\n";
 ?>
 <script type="text/javascript">
     window.close();

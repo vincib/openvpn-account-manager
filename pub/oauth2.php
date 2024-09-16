@@ -3,6 +3,10 @@
 define("SKIP_IDENTITY_CONTROL",1);
 require_once("../head.php");
 
+/* uncomment this to test without real oauth2:*/
+// echo '<html><head>     <meta name="viewport" content="width=device-width, initial-scale=0.8, shrink-to-fit=no, minimum-scale=0.8, maximum-scale=0.8, user-scalable=no"></head><body><a href="oauth2-callback.php?skip=1&auth=1&id='.$_GET["id"].'">Click here to auth successfully</a></body></html>'; exit();
+
+
 use League\OAuth2\Client\Provider\Google;
 
 $provider = new Google($conf["google"]);
