@@ -39,7 +39,7 @@ if (!password_verify($password,$me["password"])) {
     echo "Password incorrect\n";
     exit(1);
 }
-$db->exec("UPDATE users SET used='".date('Y-m-d H:i:s")."' WHERE username='".addslashes($username)."';");
+$db->exec("UPDATE users SET used='".date('Y-m-d H:i:s')."' WHERE username='".addslashes($username)."';");
 echo "OK\n";
 exit(0);
 
