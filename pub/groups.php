@@ -44,10 +44,12 @@ require_once("message.php");
      </tr>
 <?php
 
-$stmt = $db->prepare("SELECT g.name,g.cidr,count(u.username) AS used,g.timeoutminutes,g.timeouttraffic FROM groups g LEFT JOIN users u ON u.groupname=g.name GROUP BY g.name;");
+$stmt = $db->prepare("SELECT g.name,g.cidr,g.cidr6,count(u.username) AS used,g.timeoutminutes,g.timeouttraffic FROM groups g LEFT JOIN users u ON u.groupname=g.name GROUP BY g.name;");
 $stmt->execute();
 while ($res=$stmt->fetch()) {
-    echo "<tr><td>".$res["name"]."</td><td>".$res["cidr"]."</td><td>".$res["used"]."</td>";
+    echo "<tr><td>".$res["name"]."</td><td>".$res["cidr"];
+    if ($res['cidr6']) echo " &nbsp; ".$res['cidr6'];
+    echo "</td><td>".$res["used"]."</td>";
     if ($timeout_enabled) {
         echo "<td><input type=\"text\" size=\"6\" maxlength=\"2\" name=\"timeoutminutes_".$res["name"]."\" id=\"timeoutminutes_".$res["name"]."\" value=\"".intval($res["timeoutminutes"])."\"/></td>";
         echo "<td><input type=\"text\" size=\"6\" maxlength=\"2\" name=\"timeouttraffic_".$res["name"]."\" id=\"timeouttraffic_".$res["name"]."\" value=\"".intval($res["timeouttraffic"])."\"/></td>";

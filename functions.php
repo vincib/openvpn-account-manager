@@ -27,7 +27,7 @@ var_dump( cidr_range( "192.168.0.0/24" ) );          // string(27) "192.168.0.0 
  * first check that any user that has an IP is in the right CIDR GROUP     
  * then allocate IP address to missing users, including the username specified, or all of them if not specified
  */ 
-function allocate_ip($username="") {
+function allocate_ip($username="",$force=false) {
     global $db;
     // clean users in no group
     $db->exec("UPDATE users SET ip='', ipv6='' WHERE groupname='';");
@@ -43,7 +43,7 @@ function allocate_ip($username="") {
     // Check if the IP is set and in the pool :
     if ($edit["ip"]) {
         $ip = ip2long($edit["ip"]);
-        if ($ip>=$start && $ip<=$end) {
+        if ($ip>=$start && $ip<=$end && !$force) {
             // already good, skipping
             return true;
         }
@@ -59,12 +59,12 @@ function allocate_ip($username="") {
     $start=$start/4; $end=$end/4;
     $pool=array();
     while($other=$stmt->fetch()) {
-        echo "O:".$other["ip"]." ";
+//        echo "O:".$other["ip"]." ";
         // we get a pool from start/4 to end/4 (/30 mode)
         $ipother=ip2long($other["ip"])/4;
         $pool[$ipother]=1;
     }
-    print_r($pool);
+//    print_r($pool);
     $found=false;
     for($i=$start;$i<=$end;$i++) {
         if (!isset($pool[$i]) && ( ($i & 63)!=0 )) { // skip also IPs ending by .0 (for windows, just in case...)

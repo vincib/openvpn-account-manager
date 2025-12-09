@@ -26,6 +26,7 @@ try {
 
 try {
     $db->exec("ALTER TABLE users ADD ipv6 TEXT;");
+    $db->exec("ALTER TABLE groups ADD cidr6 TEXT;");
 } catch (PDOException $e) {
     echo "IPv6 already initialized, skipping...\n";
 }
@@ -49,6 +50,6 @@ try {
     echo "Allocation table already initialized, skipping...\n";
 }
 
-$db->query("REPLACE INTO users (username,password,isadmin,totp,usetotp,created,updated,used) VALUES ('admin','".password_hash($password,PASSWORD_DEFAULT)."', 1,'',0,'".date('Y-m-d H:i:s")."','".date('Y-m-d H:i:s")."',null);");
+$db->query("REPLACE INTO users (username,password,isadmin,totp,usetotp,created,updated,used) VALUES ('admin','".password_hash($password,PASSWORD_DEFAULT)."', 1,'',0,'".date('Y-m-d H:i:s')."','".date('Y-m-d H:i:s')."',null);");
 echo "password for admin account is now ".$password."\n";
 
