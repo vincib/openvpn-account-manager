@@ -28,7 +28,7 @@ if (isset($_POST["username"])) {
     }
 
     // username syntax
-    if (!$error && !preg_match('#^[0-9a-z-]+$#',$_POST["username"])) {
+    if (!$error && !preg_match('#^[_@.0-9a-z-]+$#',$_POST["username"])) {
         $error="The username contains forbidden characters, please verify";
     }
 
@@ -59,6 +59,9 @@ if (isset($_POST["username"])) {
                 $sql.=", totp='".addslashes($secret)."', usetotp=1";
             }
         }
+    }
+    if (!$error && $timeout_enabled) {
+        $sql.=", timeoutexception=".intval($_POST["timeoutexception"])." ";
     }
     if (!$error) {
         // EDIT
@@ -101,7 +104,7 @@ require_once("message.php");
 <input type="hidden" name="id" value="<?php if (isset($edit["id"])) ehe($edit["id"]); ?>">
                    <div class="row">
                    <div class="col-6">
-                                                             <label for="username">Username (a-z, 0-9 - allowed)</label>
+                                                             <label for="username">Username (a-z, 0-9 - . @ _ allowed)</label>
                    <input type="text" class="form-control" id="username" name="username" value="<?php ehe($edit["username"]); ?>" autocomplete="new-password" required/>
                    </div>
                    <div class="col-6">
@@ -129,8 +132,16 @@ while ($res=$stmt->fetch()) {
 
         <div class="row">
         <div class="col-6">
+           <p>
         <input type="checkbox" value="1" id="isadmin" name="isadmin" <?php if ($edit["isadmin"]) echo "checked=\"checked\""; ?>>
         <label for="isadmin">Is it an account administrator?</label>
+           </p>
+<?php if ($timeout_enabled) { ?>
+           <p>
+        <input type="checkbox" value="1" id="timeoutexception" name="timeoutexception" <?php if ($edit["timeoutexception"]) echo "checked=\"checked\""; ?>>
+        <label for="timeoutexception">This account should not be killed automatically in case of timeout</label>
+              </p>
+                <?php } ?>
         </div>
         <div class="col-6">
 <?php if ($edit["usetotp"]) {?>

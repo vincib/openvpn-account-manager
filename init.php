@@ -16,12 +16,29 @@ try {
 
 // upgrade for group management
 try {
-    $db->exec("CREATE TABLE groups (name TEXT PRIMARY KEY, cidr TEXT);");
+    $db->exec("CREATE TABLE groups (name TEXT PRIMARY KEY, cidr TEXT, cidr6 TEXT);");
     $db->exec("ALTER TABLE users ADD ip TEXT;");
     $db->exec("ALTER TABLE users ADD groupname TEXT;");
     $db->exec("CREATE INDEX usersgroupname ON users (groupname);"); 
 } catch (PDOException $e) {
     echo "Group management already initialized, skipping...\n";
+}
+
+try {
+    $db->exec("ALTER TABLE users ADD ipv6 TEXT;");
+} catch (PDOException $e) {
+    echo "IPv6 already initialized, skipping...\n";
+}
+
+
+// upgrade for timeout management
+try {
+    $db->exec("ALTER TABLE users ADD timeoutexception INTEGER;");
+    $db->exec("CREATE INDEX timeoutexception ON users (timeoutexception);");
+    $db->exec("ALTER TABLE groups ADD timeoutminutes INTEGER;");
+    $db->exec("ALTER TABLE groups ADD timeouttraffic INTEGER;");
+} catch (PDOException $e) {
+    echo "Timeout management already initialized, skipping...\n";
 }
 
 

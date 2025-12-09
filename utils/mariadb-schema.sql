@@ -1,0 +1,10 @@
+DROP TABLE IF EXISTS users;
+CREATE TABLE users (username TEXT, password text, isadmin boolean default false, totp text, usetotp boolean default false, created datetime, updated datetime, used datetime, ip TEXT, groupname TEXT, ipv6 TEXT, timeoutexception INTEGER);
+DROP TABLE IF EXISTS csrf;
+CREATE TABLE csrf (cookie char(32) , token char(32), created datetime, primary key (cookie,token));
+DROP TABLE IF EXISTS groups;
+CREATE TABLE groups (name TEXT, cidr TEXT, cidr6 TEXT, timeoutminutes INTEGER, timeouttraffic INTEGER);
+CREATE INDEX username ON users (username(15));
+CREATE INDEX usersgroupname ON users (groupname(15));
+CREATE INDEX timeoutexception ON users (timeoutexception);
+CREATE INDEX `name` ON groups (name(15));
