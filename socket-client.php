@@ -266,8 +266,8 @@ function openvpn_client_connect($cid,$kid,$data) {
             return;
         }
         // get a new oauth_session id (since this IS a new session for sure)
-        $stmt=$db->prepare("INSERT INTO oauth_session SET cid=?, kid=?, status=0, session=?, timeout=?;");
-        $stmt->execute([$cid,$kid,$data["session_id"],$found["timeout"]]); // same timeout as parent session ;) 
+        $stmt=$db->prepare("INSERT INTO oauth_session SET cid=?, kid=?, status=0, session=?, timeout=?, ip=?;");
+        $stmt->execute([$cid,$kid,$data["session_id"],$found["timeout"],$data["untrusted_ip"]]); // same timeout as parent session ;) 
         $oauthid = $db->lastInsertId();
         // session found, now let's find a new IP for this user...
         $result = open_session($oauthid,$found["username"],$data["untrusted_ip"]);
@@ -288,8 +288,8 @@ function openvpn_client_connect($cid,$kid,$data) {
         echo date("Y-m-d H:i:s")." RECONNECT: Sent client-auth cid/kid ".$cid."/".$kid." oauthid ".$oauthid."\n";
     }
 
-    $stmt=$db->prepare("INSERT INTO oauth_session SET cid=?, kid=?, status=0, session=?, timeout=?;");
-    $stmt->execute([$cid,$kid,$data["session_id"],time()+$conf["session_timeout"]]);
+    $stmt=$db->prepare("INSERT INTO oauth_session SET cid=?, kid=?, status=0, session=?, timeout=?, ip=?;");
+    $stmt->execute([$cid,$kid,$data["session_id"],time()+$conf["session_timeout"],$data["untrusted_ip"]]);
     $oauthid = $db->lastInsertId();
     $key=md5($conf["secretstring"].$oauthid.$conf["secretstring"]);
     fputs($ovs,"client-pending-auth $cid $kid WEB_AUTH::".$conf["baseurl"]."oauth2.php?id=".$oauthid."&key=".$key." 180\n"); // you got 3 min to authenticate, seems enough, no?

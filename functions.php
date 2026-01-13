@@ -273,6 +273,16 @@ function pager($offset, $count, $total, $url, $before = "", $after = "", $echo =
 /** Open an OPENVPN session, returns the allocated IP address, or false if wrong */
 function open_session($oauthid,$username,$ip) {
     global $conf,$db;
+
+    // check that session's IP:
+    $stmt=$db->prepare("SELECT id,ip FROM oauth_session WHERE id=?;");
+    $stmt->execute([$oauthid]);
+    $session=$stmt->fetch(PDO::FETCH_ASSOC);
+    if ($session['ip']!='' AND $session['ip']!=$ip) {
+        // phishing tried:
+        syslog(LOG_NOTICE, " Invalid IP for session $oauthid, $ip instead of ".$session['ip']);
+        return false;
+    }
     
     $stmt = $db->prepare("SELECT * FROM users WHERE username=?;");
     $stmt->execute(array($username));
