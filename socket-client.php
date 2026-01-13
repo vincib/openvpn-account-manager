@@ -93,6 +93,9 @@ while (true) {
                 echo date("Y-m-d H:i:s")." WEIRD: no IP in allocation for REAUTH on oauthid:".$me["id"]." cid:".$me["cid"]."\n";
             } else {
                 fputs($ovs,"ifconfig-push ".$ip["ip"]." ".long2ip(ip2long($ip["ip"])+1)."\n");
+                if (isset($conf["appendfile"])) {
+                    fputs($ovs,trim(file_get_contents($conf["appendfile"]))."\n");
+                }
             }
             fputs($ovs,"END\n");
             echo date("Y-m-d H:i:s")." Sent client-auth for REAUTH for cid/kid ".$me["cid"]."/".$me["kid"]." oauthid ".$me["id"]."\n";
@@ -281,7 +284,9 @@ function openvpn_client_connect($cid,$kid,$data) {
         fputs($ovs,"client-auth $cid $kid\n");
         fputs($ovs,"ifconfig-push ".$result." ".long2ip(ip2long($result)+1)."\n");
         fputs($ovs,"push \"auth-token-user ".base64_encode($data["session_id"])."\"\n");
-        
+        if (isset($conf["appendfile"])) {
+            fputs($ovs,trim(file_get_contents($conf["appendfile"]))."\n");
+        }
         // TODO : handle the dns server here (no need for the customer though)
         fputs($ovs,"END\n");
         $status=4;
@@ -329,7 +334,7 @@ function refresh_token($token) {
  * or ask for a status from openvpn.
  */
 function nothing_loop() {
-    global $db,$ovs,$status;
+    global $db,$ovs,$status,$conf;
     static $lastcheck=0;
 
     // at boottime, once we know we have an openvpn, and every 120 sec, (when openvpn doesn't send us anything), we ask openvpn for status:
@@ -363,7 +368,9 @@ function nothing_loop() {
             // but this may put some heavy load on the oauth system, so maybe not 
             fputs($ovs,"push \"auth-token-user ".base64_encode($me["session"])."\"\n");
 
-            // TODO : handle the dns server here (no need for the customer though)
+            if (isset($conf["appendfile"])) {
+                fputs($ovs,trim(file_get_contents($conf["appendfile"]))."\n");
+            }
             fputs($ovs,"END\n");
             $status=4;
             echo date("Y-m-d H:i:s")." Sent client-auth cid/kid ".$me["cid"]."/".$me["kid"]." oauthid ".$me["id"]."\n";

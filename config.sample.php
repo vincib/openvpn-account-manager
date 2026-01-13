@@ -8,6 +8,8 @@ $conf=[
 	// if you define "token" here, this allowed people using that token to POST values AS if it was the form, without CSRF need:
 	// use it via a header: Authorization: Bearer <token>
 	"token" => "random32strings",
+    // this is a (non-mandatory) file that may be dynamically filled by another process, to add dynamic routes
+    "appendfile" => "/etc/openvpn/dynamic",
 ];
 
 

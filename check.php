@@ -26,6 +26,8 @@ if (!($me=$stmt->fetch())) {
     echo "Login not found\n";
     exit(1);
 }
+
+/* YESS
 if ($me["usetotp"]) {
     $auth=substr($password,-6);
     $password=substr($password,0,-6);
@@ -39,6 +41,7 @@ if (!password_verify($password,$me["password"])) {
     echo "Password incorrect\n";
     exit(1);
 }
+*/
 $db->exec("UPDATE users SET used='".date("Y-m-d H:i:s")."' WHERE username='".addslashes($username)."';");
 echo "OK\n";
 exit(0);

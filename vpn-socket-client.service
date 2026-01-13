@@ -4,8 +4,8 @@ After=network.service
 
 [Service]
 Type=exec
-WorkingDirectory=/var/wwww/lydia-vpn
-ExecStart=./socket-client.php
+WorkingDirectory=/var/www/lydia-vpn
+ExecStart=/usr/bin/php /var/www/lydia-vpn/socket-client.php
 Restart=always
 RestartSec=5s
 
